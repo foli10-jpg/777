@@ -1,1 +1,154 @@
+<!DOCTYPE html>
+<html lang="sq">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎰 777 </title>
+<style>
+body{
+    background:#0f0f0f;
+    color:white;
+    font-family:Arial, sans-serif;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:100vh;
+    margin:0;
+}
+.game{
+    width:420px;
+    background:#181818;
+    padding:20px;
+    border-radius:15px;
+    text-align:center;
+    box-shadow:0 0 20px rgba(0,0,0,.6);
+}
+h2{margin-bottom:10px;}
+.info{display:flex;justify-content:space-between;font-weight:bold;margin-bottom:10px;}
+.slot-container{position:relative;overflow:hidden;border:3px solid #fff;border-radius:10px;height:80px;margin:20px 0;}
+.pointer{position:absolute;left:50%;top:0;transform:translateX(-50%);width:4px;height:100%;background:red;z-index:2;}
+.reel-container{display:flex;}
+.slots{display:flex;transition:transform 2.2s cubic-bezier(.15,.85,.2,1);}
+.slot{width:60px;height:60px;margin:10px 5px;background:#1e90ff;display:flex;justify-content:center;align-items:center;font-size:18px;font-weight:bold;border-radius:10px;color:white;}
+button{padding:10px 25px;font-size:18px;border:none;border-radius:8px;background:gold;font-weight:bold;cursor:pointer;}
+button:disabled{opacity:.6;cursor:not-allowed;}
+#result{margin-top:15px;font-size:22px;font-weight:bold;}
+.bet-controls{margin-top:10px;display:flex;justify-content:center;gap:10px;}
+.bet-controls button{padding:5px 15px;font-size:16px;}
+</style>
+</head>
+<body>
 
+<div class="game">
+    <h2>🎰 777 </h2>
+    <div class="info">
+        <div>💰 Binance: <span id="balance">10.00</span>€</div>
+        <div>🎯 Bet: <span id="bet">0.50</span>€</div>
+    </div>
+    <div class="slot-container">
+        <div class="pointer"></div>
+        <div class="reel-container">
+            <div class="slots" id="reel1"></div>
+            <div class="slots" id="reel2"></div>
+            <div class="slots" id="reel3"></div>
+        </div>
+    </div>
+    <div class="bet-controls">
+        
+    </div><br>
+    <button id="spinBtn" onclick="spin()">START</button>
+    <div id="result"></div>
+</div>
+
+<script>
+// SIMBOLET DHE FITIMET
+const symbols = ["?","!","?","!","?","!","?","!","?"];
+const payouts = {"0€":0,"0.20":1,"0.50":1,"1.00":4,"2.00":4}; 
+const reels = [document.getElementById("reel1"),document.getElementById("reel2"),document.getElementById("reel3")];
+const resultEl = document.getElementById("result");
+const balanceEl = document.getElementById("balance");
+const betEl = document.getElementById("bet");
+const btn = document.getElementById("spinBtn");
+
+let balance = 10.00;
+let bet = 0.50;
+const totalBoxes = 15;
+
+// FUNKSIONI PËR KRIJU KATRORËT + KOPJE PËR EFTEKT INFINIT
+function createReel(reel){
+    reel.innerHTML = "";
+    const total = totalBoxes*5; // kopje për efekt infinit
+    for(let i=0;i<total;i++){
+        const div = document.createElement("div");
+        div.className = "slot";
+        div.textContent = symbols[i % symbols.length];
+        reel.appendChild(div);
+    }
+}
+reels.forEach(r=>createReel(r));
+
+// NDRYSHO BET
+function changeBet(amount){
+    bet = Math.max(0.20, Math.min(2.00, bet+amount));
+    betEl.textContent = bet.toFixed(2);
+}
+
+// SPIN
+function spin(){
+    if(balance < bet){resultEl.textContent="❌ Nuk ke binance"; return;}
+    btn.disabled = true;
+    resultEl.textContent="";
+    balance -= bet;
+    updateBalance();
+
+    const slotWidth = 70;
+    const containerCenter = 210;
+    const loops = 10; // më shumë loops për efekt infinit
+    const stopIndexes = [];
+    for(let i=0;i<3;i++){
+        // 10% fitim, 90% humbje
+        if(Math.random() <= 0.10){
+            stopIndexes.push(Math.floor(Math.random()*symbols.length));
+        }else{
+            stopIndexes.push(0);
+        }
+    }
+
+    // animacion reels
+    reels.forEach((reel,i)=>{
+        const targetX = containerCenter - ((stopIndexes[i] + loops*totalBoxes)*slotWidth + slotWidth/2);
+        reel.style.transition = "none";
+        reel.style.transform="translateX(0)";
+        setTimeout(()=>{
+            reel.style.transition = "transform 2.2s cubic-bezier(.15,.85,.2,1)";
+            reel.style.transform = `translateX(${targetX}px)`;
+        },50);
+    });
+
+    // pas 2.2s shfaq fitimin real
+    setTimeout(()=>{
+        let win = 0;
+        stopIndexes.forEach(idx=>{
+            const symbol = symbols[idx];
+            let max = payouts[symbol]*bet;
+            if(max > 2) max = 2; // LIMIT fitimi
+            win += max;
+        });
+
+        if(win > 0){
+            resultEl.textContent = `🎉 FITOVE ${win.toFixed(2)}€`;
+        } else {
+            resultEl.textContent = "❌ 0€";
+        }
+
+        balance += win;
+        updateBalance();
+        btn.disabled = false;
+    },2200);
+}
+
+function updateBalance(){balanceEl.textContent = balance.toFixed(2);}
+</script>
+
+</body>
+</html>
